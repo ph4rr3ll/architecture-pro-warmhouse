@@ -1,0 +1,17 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+title Контекст системы "Тёплый дом" - удалённое управление отоплением
+
+Person(user, "Пользователь", "Житель дома, который управляет отоплением", $tags="primary")
+Person(engineer, "Специалист по подключению", "Сотрудник компании, настраивающий оборудование")
+
+System(warm_house, "Система 'Тёплый Дом'", "Платформа удалённого управления отоплением")
+
+System_Ext(sensor, "Умный термостат/датчик", "Оборудование в доме пользователя")
+
+Rel(user, warm_house, "Управляет отоплением\nПроверяет температуру", "HTTP/REST, Веб-интерфейс")
+Rel(engineer, warm_house, "Настраивает оборудование\nПодключает новые дома", "HTTP/REST")
+Rel(warm_house, sensor, "Отправляет команды управления\nЗапрашивает текущую температуру", "HTTPS/API (синхронный)")
+
+@enduml
