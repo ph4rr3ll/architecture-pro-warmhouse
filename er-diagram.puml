@@ -1,0 +1,98 @@
+@startuml
+
+hide circle
+
+entity "Пользователь" as user {
+  * id : BIGINT <<PK, not null>> <<auto>>
+  --
+  * phone : VARCHAR(10) <<not null>>
+  * email : VARCHAR(255) <<not null>>
+  * first_name : VARCHAR(255) <<not null>>
+  * last_name : VARCHAR(255) <<not null>>
+  is_active : BOOLEAN <<not null>>
+  created_at : TIMESTAMP <<not null>>
+  updated_at : TIMESTAMP <<not null>>
+}
+
+entity "Модуль" as sensor {
+    * id : BIGINT <<PK, not null>> <<auto>>
+    --
+    * name : VARCHAR(255) <<not null>>
+	* type_id : INT <<FK, not null>>
+    vendor : VARCHAR(32) <<nullable>>
+	description : TEXT <<nullable>>
+    unit : VARCHAR(12) <<nullable>>
+    created_at : TIMESTAMP <<not null>>
+}
+
+entity "Тип модуля" as sensor_type {
+    * id : INT <<PK, not null>> <<auto>>
+    --
+    * name : VARCHAR(64) <<not null>>
+}
+
+entity "Умный дом" as smart_home {
+    * id : BIGINT <<PK, not null>> <<auto>>
+    --
+    * user_id : BIGINT <<FK, not null>>
+    * name : VARCHAR(128) <<not null>>
+    created_at : TIMESTAMP <<not null>>
+    updated_at : TIMESTAMP <<not null>>
+}
+
+' при создании умного дома подразумевается создание default "комнаты"
+entity "Комната" as room {
+    * id : BIGINT <<PK, not null>> <<auto>>
+    --
+    * home_id : BIGINT <<FK, not null>>
+    * name : VARCHAR(128) <<not null>>
+    * is_default : BOOLEAN <<not null>>
+    created_at : TIMESTAMP <<not null>>
+    updated_at : TIMESTAMP <<not null>>
+}
+
+entity "Устройство умного дома" as device {
+    * id : BIGINT <<PK, not null>> <<auto>>
+    --
+    * sensor_id : BIGINT <<FK>>
+    * home_id : BIGINT <<FK, not null>>
+    * room_id : BIGINT <<FK, not null>>
+    * status : INT <<FK, not null>>
+    created_at : TIMESTAMP <<not null>>
+    updated_at : TIMESTAMP <<not null>>
+}
+
+' Справочник. Допустимые значения: "Включен", "Выключен", "Недоступен"
+entity "Статус устройства" as device_status {
+    * id : INT <<PK>> <<auto>>
+    --
+    * status : VARCHAR(16)
+}
+
+entity "Телеметрия" as telemetry {
+  *time : TIMESTAMPTZ <<PK, not null>>
+  *device_id : BIGINT <<PK, FK, not null>>
+  --
+  * name : VARCHAR(50) <<not null>>
+  * value : DOUBLE PRECISION
+  tags : JSONB <<default '{}'::jsonb>>
+  --
+  hypertable: device_telemetry
+  chunk_time_interval: 7 days
+  compression: enabled
+  retention_policy: 90 days
+  --
+  UNIQUE (device_id, metric_name, time)
+  INDEX idx_device_time (device_id, time DESC)
+  INDEX idx_metric_name (metric_name, time DESC)
+  INDEX idx_tags (tags)
+}
+
+sensor_type ||--o{ sensor : "имеет тип"
+user ||--o{ smart_home : "владеет"
+smart_home ||--o{ room : "содержит"
+sensor ||--o{ device : "реализует"
+room ||--o{ device : "содержит"
+device_status ||--o{ device : "имеет статус"
+
+@enduml
