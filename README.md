@@ -73,9 +73,13 @@
 **Диаграмма компонентов (Components)**
 
 [Диаграмма компонентов для микросервиса user-service](https://disk.yandex.ru/i/qsLUCDMvKX_gWw)
+
 [Диаграмма компонентов для микросервиса device-mart-service](https://disk.yandex.ru/i/SgLqFNKt1f2eyg)
+
 [Диаграмма компонентов для микросервиса telemetry-mart-service](https://disk.yandex.ru/i/Cn7rVCZNKtR9pg)
+
 [Диаграмма компонентов для микросервиса device-interaction-service](https://disk.yandex.ru/i/LByAZW5Ubz6jmw)
+
 [Диаграмма компонентов для микросервиса device-management-service](https://disk.yandex.ru/i/dRYLVb-c_15bTw)
 
 **Диаграмма кода (Code)**
