@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Витрина устройств (device-mart-service)
+
+Container_Boundary(device_mart_service, "Витрина устройств") {
+    ' API компоненты
+    Component(device_view, "DeviceView", "Python/Django REST", "API для работы с устройствами", $tags="api")
+    
+    ' Бизнес-логика
+    Component(catalog_service, "CatalogService", "Python", "Формирование каталога доступных устройств", $tags="business")
+    Component(device_registration_service, "DeviceRegistrationService", "Python", "Валидация и регистрация типов устройств", $tags="business")
+    
+    ' Модели данных
+    Component(device_model, "DeviceTypeModel", "Django ORM", "Модель типов устройств", $tags="data")
+}
+
+' Внешние зависимости
+Container_Ext(api_gateway, "API Gateway", "Kong/NGINX")
+ContainerDb_Ext(device_db, "База устройств", "PostgreSQL")
+
+' Взаимодействия
+Rel(api_gateway, device_view, "API запросы:\nПолучение списка устройств\nРегистрация новых устройств", "REST/HTTPS")
+
+' Обработка запросов в DeviceView
+Rel(device_view, catalog_service, "Запрос на получение каталога", "Python calls")
+Rel(device_view, device_registration_service, "Запрос на регистрацию устройства", "Python calls")
+
+' Работа сервиса каталога
+Rel(catalog_service, device_model, "Получение типов устройств", "Django ORM")
+
+' Работа сервиса регистрации
+Rel(device_registration_service, device_model, "Сохранение типа устройства", "Django ORM")
+
+' Работа с базой данных
+Rel(device_model, device_db, "CRUD типов устройств", "SQL через Django ORM")
+
+@enduml

@@ -1,0 +1,35 @@
+@startuml
+title Диаграмма кода сервиса DeviceInteractionService микросервиса device_interaction_service
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+interface Interactor {
+    +Object interact()
+}
+
+class ZigbeeGateway {
+    +Object interact()
+}
+
+class MqttClient {
+    +Object interact()
+}
+
+class ONVIFClient {
+    +Object interact()
+}
+
+class DeviceInteractionService {
+  -Interactor interactor
+  +Object sendCommand()
+}
+
+Interactor <-- ZigbeeGateway : implements
+Interactor <-- MqttClient : implements
+Interactor <-- ONVIFClient : implements
+
+DeviceInteractionService "1" -- "1" Interactor : has
+
+@enduml

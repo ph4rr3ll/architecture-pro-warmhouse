@@ -1,0 +1,26 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис телеметрии (telemetry-service)
+
+Container_Boundary(telemetry_service, "Сервис телеметрии") {
+    Component(telemetry_controller, "TelemetryController", "Spring MVC Controller", "Получение данных телеметрии", $tags="api")
+    Component(analytics_service, "AnalyticsService", "Java Bean", "Сервис по предоставлению данных телеметрии", $tags="business")
+    Component(telemetry_repository, "TelemetryRepository", "Spring Data JPA", "CRUD операции над телеметрией", $tags="data")
+}
+
+' Внешние зависимости
+Container_Ext(api_gateway, "API Gateway", "Kong/NGINX")
+Container_Ext(message_broker, "Брокер сообщений", "Apache Kafka")
+ContainerDb_Ext(telemetry_db, "База телеметрии", "TimescaleDB")
+
+' Взаимодействия
+Rel(api_gateway, telemetry_controller, "Запросы телеметрии\nАналитика", "REST/HTTPS")
+Rel(telemetry_controller, analytics_service, "Формирование запроса", "Java calls")
+Rel(analytics_service, telemetry_repository, "CRUD сценариев", "Java calls")
+Rel(telemetry_repository, telemetry_db, "SQL запросы", "SQL via JPA")
+
+Rel(analytics_service, message_broker, "Подписка на события", "Kafka API")
+Rel_Back(analytics_service, message_broker, "Публикация данных", "Kafka API")
+
+@enduml

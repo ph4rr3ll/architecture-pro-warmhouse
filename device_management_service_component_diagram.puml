@@ -1,0 +1,46 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис управления устройствами (device-management-service)
+
+Container_Boundary(device_control_service, "Сервис управления устройствами") {
+    ' контроллеры
+    Component(home_controller, "HomeController", "Spring MVC Controller", "Управление умными домами", $tags="api")
+    Component(device_controller, "DeviceController", "Spring MVC Controller", "Управление устройствами", $tags="api")
+    Component(scenario_controller, "ScenarioController", "Spring MVC Controller", "Управление сценариями", $tags="api")
+    
+    Component(home_service, "HomeService", "Java Bean", "Логика умных домов", $tags="business")
+    Component(device_management_service, "DeviceManagementService", "Java Bean", "Управление устройствами", $tags="business")
+    Component(scenario_service, "ScenarioService", "Java Bean", "Логика работы со сценариями", $tags="business")
+    
+    Component(home_repository, "HomeRepository", "Spring Data JPA", "Доступ к данным домов", $tags="data")
+    Component(device_repository, "DeviceRepository", "Spring Data JPA", "Операции над устройствами", $tags="data")
+    Component(scenario_repository, "ScenarioRepository", "Spring Data JPA", "Хранение сценариев", $tags="data")
+}
+
+' Внешние зависимости
+Container_Ext(api_gateway, "API Gateway", "Kong/NGINX")
+Container_Ext(message_broker, "Брокер сообщений", "Apache Kafka")
+ContainerDb_Ext(device_db, "База устройств", "PostgreSQL")
+
+' Взаимодействия
+Rel(api_gateway, home_controller, "Регистрация умных домов", "REST/HTTPS")
+Rel(api_gateway, device_controller, "Управление устройствами", "REST/HTTPS")
+Rel(api_gateway, scenario_controller, "Управление сценариями", "REST/HTTPS")
+
+Rel(home_controller, home_service, "Операции с домами", "Java calls")
+Rel(device_controller, device_management_service, "Управление устройствами", "Java calls")
+Rel(scenario_controller, scenario_service, "Создание сценариев", "Java calls")
+
+Rel(home_service, home_repository, "CRUD домов", "Java calls")
+Rel(scenario_service, scenario_repository, "CRUD сценариев", "Java calls")
+Rel(device_management_service, device_repository, "CRUD устройств", "Java calls")
+Rel(device_management_service, message_broker, "Команды устройствам", "Kafka API")
+Rel_Back(device_management_service, message_broker, "Статус выполнения команд", "Kafka API")
+Rel(scenario_service, device_management_service, "Управление устройствами в рамках команд", "Java calls")
+
+Rel(home_repository, device_db, "SQL запросы", "SQL via JPA")
+Rel(device_repository, device_db, "SQL запросы", "SQL via JPA")
+Rel(scenario_repository, device_db, "SQL запросы", "SQL via JPA")
+
+@enduml

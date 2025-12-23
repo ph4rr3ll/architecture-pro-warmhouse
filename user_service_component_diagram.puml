@@ -1,0 +1,28 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис пользователей (user-service)
+
+Container_Boundary(user_service, "Сервис пользователей") {
+    Component(auth_controller, "AuthController", "Spring MVC Rest Controller", "Обработка запросов аутентификации", $tags="api")
+    Component(user_controller, "UserController", "Spring MVC Rest Controller", "Управление пользователями", $tags="api")
+    Component(auth_service, "AuthService", "Java Bean", "Аутентификация и авторизация", $tags="business")
+    Component(user_management_service, "UserManagementService", "Java Bean", "Управление профилями", $tags="business")
+    Component(jwt_provider, "JWTProvider", "Java/jwt", "Генерация и валидация токенов", $tags="infrastructure")
+    Component(user_repository, "UserRepository", "Spring Data JPA", "Доступ к данным пользователей", $tags="data")
+}
+
+' Внешние зависимости
+Container_Ext(api_gateway, "API Gateway", "Kong/NGINX")
+ContainerDb_Ext(user_db, "База данных пользователей", "PostgreSQL")
+
+' Взаимодействия
+Rel(api_gateway, auth_controller, "Аутентификация\nВалидация токенов", "REST/HTTPS")
+Rel(api_gateway, user_controller, "Управление пользователями", "REST/HTTPS")
+Rel(auth_controller, auth_service, "Обработка учетных данных", "Java calls")
+Rel(user_controller, user_management_service, "Управление профилями", "Java calls")
+Rel(auth_service, jwt_provider, "Генерация/валидация токенов", "Java calls")
+Rel(user_management_service, user_repository, "CRUD операции", "Java calls")
+Rel(user_repository, user_db, "SQL запросы", "SQL via JPA")
+
+@enduml
