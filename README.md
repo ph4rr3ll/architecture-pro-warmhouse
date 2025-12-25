@@ -107,9 +107,7 @@
 
 [Документация на REST API микросервиса device-management-serivce](schemas/device-management-service-api-1-0-0.yaml)
 
-[Документация контракта асинхронного взаимодействия сервиса device-interaction-service]()
-- получение команды на включение/выключение устройства
-- ответ о состоянии устройства
+[Документация контракта асинхронного взаимодействия сервиса device-interaction-service](schemas/device-interaction-service-async-api-1-0-0.yaml)
 
 # Задание 5. Работа с docker и docker-compose
 
