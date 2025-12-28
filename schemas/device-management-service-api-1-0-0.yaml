@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: Device Management Service API
+  version: 1.0.0
+  description: API для управления умным домом и его устройствами
+servers:
+  - url: https://api.smart-home.com/v1
+    description: Production server
+  - url: https://dev.api.smart-home.com/v1
+    description: Dev server
+
+paths:
+  /home/{id}:
+    get:
+      tags:
+        - [SmartHome]
+      summary: Получение сведений об умном доме
+      description: Возвращает подробную информацию об умном доме, включая комнаты и устройства
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID умного дома
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: includeDevices
+          in: query
+          required: false
+          description: Включать ли информацию об устройствах в ответ
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartHomeDetailResponse'
+        '404':
+          description: Умный дом не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /device/{id}:
+    get:
+      tags:
+        - [Device]
+      summary: Получение сведений об устройстве
+      description: Возвращает подробную информацию об устройстве умного дома
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceDetailResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - [Device]
+      summary: Обновление состояния устройства
+      description: Обновляет статус устройства умного дома
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID устройства
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceStatusUpdateRequest'
+      responses:
+        '200':
+          description: Статус устройства успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatusUpdateResponse'
+        '400':
+          description: Неверный запрос (неверный статус или данные)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    # Базовые модели    
+    SensorInfoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 201
+        name:
+          type: string
+          maxLength: 255
+          example: "Датчик температуры"
+        type:
+          type: string
+          maxLength: 64
+          example: "Температурный датчик"
+    
+    RoomDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 789
+        name:
+          type: string
+          maxLength: 128
+          example: "Гостиная"
+        is_default:
+          type: boolean
+          example: true
+    
+    # Ответы API
+    SmartHomeDetailResponse:
+      type: object
+      properties:
+        home:
+          $ref: '#/components/schemas/SmartHomeDto'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomWithDevicesDto'
+    
+    SmartHomeDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 123
+        name:
+          type: string
+          maxLength: 128
+          example: "Моя квартира"
+    
+    RoomWithDevicesDto:
+      allOf:
+        - $ref: '#/components/schemas/RoomDto'
+        - type: object
+          properties:
+            devices:
+              type: array
+              items:
+                $ref: '#/components/schemas/DeviceInfoDto'
+    
+    DeviceInfoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        sensor:
+          $ref: '#/components/schemas/SensorInfoDto'
+        status:
+          type: string
+          maxLength: 16
+          enum: ["Включен", "Выключен", "Недоступен"]
+          example: "Включен"
+        room_id:
+          type: integer
+          format: int64
+          example: 789
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    DeviceDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/DeviceInfoDto'
+        - type: object
+          properties:
+            home_id:
+              type: integer
+              format: int64
+              example: 123
+            sensor_id:
+              type: integer
+              format: int64
+              example: 201
+    
+    # Запросы API
+    DeviceStatusUpdateRequest:
+      type: object
+      required:
+        - status_id
+      properties:
+        status_id:
+          type: integer
+          description: ID нового статуса устройства
+          example: 2
+          minimum: 1
+    
+    DeviceStatusUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Статус устройства успешно обновлен"
+        device:
+          $ref: '#/components/schemas/DeviceInfoDto'
+        previous_status:
+          type: string
+          maxLength: 16
+          enum: ["Включен", "Выключен", "Недоступен"]
+          example: "Включен"
+        new_status:
+          type: string
+          maxLength: 16
+          enum: ["Включен", "Выключен", "Недоступен"]
+          example: "Включен"
+        updated_at:
+          type: string
+          format: date-time
+    
+    # Обработка ошибок
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "NOT_FOUND"
+            message:
+              type: string
+              example: "Умный дом не найден"
+            details:
+              type: object
+              nullable: true
+              additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/home/999"
+
+  parameters:
+    PaginationLimit:
+      name: limit
+      in: query
+      description: Количество элементов на странице
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 20
+        default: 10
+    PaginationOffset:
+      name: offset
+      in: query
+      description: Смещение для пагинации
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

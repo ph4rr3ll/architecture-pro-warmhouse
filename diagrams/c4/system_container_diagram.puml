@@ -1,0 +1,69 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма контейнеров - Экосистема "Умные посёлки"
+
+Person(user, "Пользователь", "Житель умного посёлка")
+Person(partner, "Партнёр", "Производитель устройств")
+
+System_Boundary(ecosystem, "Экосистема Умные Посёлки") {
+    ' Web и Mobile интерфейсы
+    Container(spa, "Веб-приложение", "React/TypeScript", "SaaS-портал", $tags="frontend")
+    Container(mobile_app, "Мобильное приложение", "Swift/Kotlin", "Мобильный клиент", $tags="frontend")
+    
+    ' API Gateway
+    Container(api_gateway, "API Gateway", "Kong/NGINX", "Единая точка входа, маршрутизация, аутентификация", $tags="api")
+    
+    ' Бэкенд сервисы
+    Container(user_service, "Сервис пользователей", "Java/Spring Boot", "Управление пользователями, OAuth2, JWT", $tags="backend")
+    Container(device_mart_service, "Витрина устройств", "Python/Django", "Регистрация устройств вендорами, добавление в умный дом пользователями", $tags="backend")
+    Container(device_management_service, "Сервис управления устройствами", "Java/Spring Boot", "Управление зарегистрированными устройствами и сценариями автоматизации", $tags="backend")
+    Container(telemetry_service, "Сервис телеметрии", "Java/Spring Boot", "Сбор и анализ данных с устройств", $tags="backend")
+    Container(device_interaction_service, "Сервис взаимодействия с устройствами", "Java/Spring Boot", "Взаимодействие с конечным устройствами посредством протоколов", $tags="backend")
+    
+    ' Базы данных и брокер сообщений
+    ContainerDb(user_db, "База пользователей", "PostgreSQL", "Данные пользователей и прав доступа", $tags="database")
+    ContainerDb(device_db, "База устройств", "PostgreSQL", "Реестр устройств, пользовательские умные дома и сценарии", $tags="database")
+    ContainerDb(telemetry_db, "База телеметрии", "TimescaleDB", "Временные ряды данных с устройств", $tags="database")
+    
+    ' Брокер сообщений
+    Container(message_broker, "Брокер сообщений", "Apache Kafka", "Асинхронный обмен сообщениями\nПубликация событий", $tags="infrastructure")
+}
+
+' Внешние системы
+System_Ext(partner_device1, "Устройства партнёра A", "Умные термостаты по протоколу Zigbee")
+System_Ext(partner_device2, "Устройства партнёра B", "Умные лампы по протоколу MQTT")
+System_Ext(partner_device3, "Устройства партнёра C", "Камеры наблюдения по протоколу ONVIF")
+
+' Взаимодействия с пользователями
+Rel(user, spa, "Регистрируется в системе\nУправляет устройствами\nНастраивает сценарии\nПросматривает телеметрию", "HTTPS/WebSocket")
+Rel(user, mobile_app, "Регистрируется в системе\nУправляет с мобильного устройства\nПолучает уведомления", "HTTPS/Push")
+Rel(partner, spa, "Регистрирует новые устройства", "HTTPS/API")
+
+' Взаимодействия между контейнерами
+Rel(spa, api_gateway, "API вызовы", "REST/HTTPS")
+Rel(mobile_app, api_gateway, "API вызовы", "REST/HTTPS")
+Rel(api_gateway, user_service, "Проверка токенов", "REST/HTTPS")
+Rel(api_gateway, device_mart_service, "Просмотр доступных устройств, регистрация новых", "REST/HTTPS")
+Rel(api_gateway, device_management_service, "Регистрация умного дома, управление устройствами, управление сценариями,", "REST/HTTPS")
+Rel(api_gateway, telemetry_service, "Получение данных показатей с умных устройств,", "REST/HTTPS")
+
+' Взаимодействия с базами данных и брокером сообщений
+Rel(user_service, user_db, "Чтение/запись", "SQL")
+Rel(device_mart_service, device_db, "Чтение/запись", "SQL")
+Rel(device_management_service, device_db, "Чтение/запись", "SQL")
+Rel(telemetry_service, telemetry_db, "Чтение данных", "SQL")
+' Асинхронные взаимодействия (потоки данных взаимодействия с устройствами)
+Rel(device_management_service, message_broker, "Публикация событий управления устройствами", "Kafka API")
+Rel_Back(device_management_service, message_broker, "Статус взаимодействия с устройством", "Kafka API")
+Rel(telemetry_service, message_broker, "Запрос получения данных телеметрии", "Kafka API")
+Rel_Back(telemetry_service, message_broker, "Получение данных телеметрии", "Kafka API")
+Rel(device_interaction_service, message_broker, "Подписка на события", "Kafka API")
+Rel_Back(device_interaction_service, message_broker, "Публикация данных", "Kafka API")
+
+' Взаимодействие с внешними устройствами
+Rel(device_interaction_service, partner_device1, "Подключение к устройству через шлюз/координатор", "Zigbee")
+Rel(device_interaction_service, partner_device2, "Подключение к устройству через MQTT-брокер", "MQTT")
+Rel(device_interaction_service, partner_device3, "Подключение к устройству через SOAP/XML over HTTP/HTTPS", "ONVIF")
+
+@enduml

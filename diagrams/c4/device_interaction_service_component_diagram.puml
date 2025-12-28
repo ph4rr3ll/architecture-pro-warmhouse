@@ -1,0 +1,32 @@
+@startuml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов - Сервис управления устройствами (device-interaction-service)
+
+Container_Boundary(device_control_service, "Сервис управления устройствами") {
+    Component(device_interaction_service, "DeviceInteractionService", "Java Bean", "Сервис взаимодействия с устройствами", $tags="business")
+
+    Component(zigbee_gateway, "ZigbeeGateway", "Java", "Интеграция Zigbee", $tags="infrastructure")
+    Component(mqtt_client, "MQTTClient", "Java", "MQTT клиент", $tags="infrastructure")
+    Component(onvif_client, "ONVIFClient", "Java", "ONVIF клиент", $tags="infrastructure")
+}
+
+' Внешние зависимости
+System_Ext(message_broker, "Брокер сообщений", "Apache Kafka")
+System_Ext(zigbee_device, "Zigbee устройство", "Термостат, датчик")
+System_Ext(mqtt_device, "MQTT устройство", "Умная лампа")
+System_Ext(onvif_device, "ONVIF устройство", "Камера наблюдения")
+
+' Взаимодействия
+Rel(device_interaction_service, message_broker, "Подписка на события", "Kafka API")
+Rel_Back(device_interaction_service, message_broker, "Публикация данных", "Kafka API")
+
+Rel(device_interaction_service, zigbee_gateway, "Zigbee команды", "Java calls")
+Rel(device_interaction_service, mqtt_client, "MQTT команды", "Java calls")
+Rel(device_interaction_service, onvif_client, "ONVIF команды", "Java calls")
+
+Rel(zigbee_gateway, zigbee_device, "Управление устройством", "Zigbee")
+Rel(mqtt_client, mqtt_device, "Управление устройством", "MQTT")
+Rel(onvif_client, onvif_device, "Управление устройством", "ONVIF")
+
+@enduml

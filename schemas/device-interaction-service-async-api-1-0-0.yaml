@@ -1,0 +1,164 @@
+asyncapi: '3.0.0'
+info:
+  title: Device Command Async API
+  version: '1.0.0'
+  description: Асинхронный API для управления устройствами умного дома
+servers:
+  kafka:
+    host: 'localhost:9092'
+    protocol: kafka
+    description: Локальный Kafka для разработки
+
+defaultContentType: application/json
+channels:
+  device.commands:
+    address: 'device.command.initiated'
+    description: Событие инициации команды для устройства
+    messages:
+      deviceCommand:
+        $ref: '#/components/messages/DeviceCommand'
+    bindings:
+      kafka:
+        topic: 'device.command.initiated'
+  command.responses:
+    address: 'device.command.processed'
+    description: Канал для отправки подтверждений выполнения команд
+    messages:
+      commandResponse:
+        $ref: '#/components/messages/CommandResponse'
+    bindings:
+      kafka:
+        topic: 'device.command.processed'
+
+operations:
+  receiveDeviceCommands:
+    action: receive
+    channel:
+      $ref: '#/channels/device.commands'
+    title: Получить команды для устройств
+    description: |
+      Device-interaction-service подписывается на этот канал для получения команд.
+      При получении команды выполняет её на устройстве и отправляет подтверждение.
+    bindings:
+      kafka:
+        groupId: 'device-interaction-service'
+        clientId: 'device-interaction-service-1'
+  sendCommandResponses:
+    action: send
+    channel:
+      $ref: '#/channels/command.responses'
+    title: Отправить подтверждение команды
+    summary: Публикует подтверждение выполнения команды
+    description: |
+      После выполнения команды на устройстве отправляет подтверждение.
+      Включает статус выполнения (SUCCESS или FAILED).
+    bindings:
+      kafka:
+        clientId: 'device-interaction-service-producer'
+
+components:
+  messages:
+    DeviceCommand:
+      name: deviceCommand
+      title: Команда устройства
+      contentType: application/json
+      headers:
+        type: object
+        properties:
+          messageId:
+            type: string
+            format: uuid
+            description: Уникальный идентификатор сообщения
+          timestamp:
+            type: string
+            format: date-time
+            description: Время создания команды
+        required: [messageId, timestamp]
+        example:
+          messageId: '550e8400-e29b-41d3-a456-426614174000'
+          timestamp: '2023-10-05T14:30:00Z'
+      payload:
+        type: object
+        required: [commandId, deviceId, command]
+        properties:
+          commandId:
+            type: string
+            format: uuid
+            description: Уникальный идентификатор команды
+          deviceId:
+            type: int64
+            description: Идентификатор устройства в системе
+            example: 32
+          command:
+            type: string
+            enum: [turn_on, turn_off]
+            description: Команда для выполнения
+          metadata:
+            type: object
+            additionalProperties: true
+            description: Дополнительные метаданные (опционально)
+            example:
+              requestedBy: 'user-456'
+              priority: 'normal'
+        example:
+          commandId: '123e4567-e89b-12d3-a456-426614174000'
+          deviceId: 32
+          command: 'turn_on'
+          metadata:
+            requestedBy: 'user-456'
+      correlationId:
+        description: Для связи команды и ответа
+        location: '$message.payload#/commandId'
+    CommandResponse:
+      name: commandResponse
+      title: Ответ на команду
+      contentType: application/json
+      headers:
+        type: object
+        properties:
+          messageId:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+          correlationId:
+            type: string
+            format: uuid
+            description: ID исходной команды для связи
+        required: [messageId, timestamp, correlationId]
+      payload:
+        type: object
+        required: [correlationId, deviceId, status, timestamp]
+        properties:
+          correlationId:
+            type: string
+            format: uuid
+            description: ID исходной команды (commandId из DeviceCommand)
+          deviceId:
+            type: int64
+            description: Идентификатор устройства
+          status:
+            type: string
+            enum: [SUCCESS, FAILED]
+            description: Статус выполнения команды
+          errorMessage:
+            type: string
+            description: Сообщение об ошибке (только если status = FAILED)
+          executedAt:
+            type: string
+            format: date-time
+        example:
+          correlationId: '123e4567-e89b-12d3-a456-426614174000'
+          deviceId: 32
+          status: 'SUCCESS'
+          executedAt: '2023-10-05T14:30:05Z'
+      correlationId:
+        description: Связь с исходной командой
+        location: '$message.payload#/correlationId'
+
+tags:
+  - name: commands
+    description: Управление командами устройств
+  - name: responses
+    description: Ответы на команды
