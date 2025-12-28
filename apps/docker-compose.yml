@@ -53,8 +53,56 @@ services:
     networks:
       - smarthome-network
 
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=telemetry
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ../telemetry-service/src/main/resources/init-timescaledb.sql:/docker-entrypoint-initdb.d/init-timescaledb.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  telemetry-service:
+    build:
+      context: ../telemetry-service
+      dockerfile: Dockerfile
+    container_name: telemetry-service
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      temperature-api:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://timescaledb:5432/telemetry
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SENSORS_DATASOURCE_URL=jdbc:postgresql://postgres:5432/smarthome
+      - SENSORS_DATASOURCE_USERNAME=postgres
+      - SENSORS_DATASOURCE_PASSWORD=postgres
+      - TEMPERATURE_API_BASE_URL=http://temperature-api:8081
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
 volumes:
   postgres_data:
+  timescaledb_data:
 
 networks:
   smarthome-network:
