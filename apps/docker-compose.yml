@@ -24,7 +24,7 @@ services:
 
   temperature-api:
     build:
-      context: ../temperature-api
+      context: ./temperature-api
       dockerfile: Dockerfile
     container_name: temperature-api
     depends_on:
@@ -76,7 +76,7 @@ services:
 
   telemetry-service:
     build:
-      context: ../telemetry-service
+      context: ./telemetry-service
       dockerfile: Dockerfile
     container_name: telemetry-service
     depends_on:
